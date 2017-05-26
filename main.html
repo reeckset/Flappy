@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html style="height:100%; width:100%;">
+<head>
+
+</head>
+<body style="height:100%; width:100%;">
+<div style="width:600px; height:600px; background-color:#60A0FF; position:absolute; overflow: hidden; background-image:url(background.gif); background-size:cover;" id="mainCanvas" onkeypress="jump()"></div>
+<p id="Score" style="position:fixed; top:0; margin-left: 620px;"></p>
+<script>
+
+class Coord{
+	constructor(x, y){
+		this.x = x;
+		this.y = y;
+	}
+}
+class Object{
+	constructor(x, y, width, height, color){
+	this.pos = new Coord(x, y);
+	this.size = new Coord(width, height);
+	this.speedX = 0;
+	this.speedY = 0;
+	this.color = color;
+	objects.push(this);
+	}
+
+	destruct(){
+		objects.splice(objects.indexOf(this), 1);
+	}
+
+	left(){ return this.pos.x; }
+	right(){ return this.pos.x + this.size.x; }
+	top(){ return this.pos.y + this.size.y}
+	bottom(){ return this.pos.y }
+}
+
+
+/// BEGGINGING	
+
+var objects = [];
+var pipes = [];
+
+var bird = new Object(30,300,70,50,"transparent");
+bird.image = "bird2.gif";
+var score = 0;
+bird.speedX = 0;
+var fallingAnimationSpeed = 2;
+var gravity = 0.6;
+var jumpSpeed = 11;
+var verticalDistanceBetweenPipes = 200;
+var pipeSpeed = 4;
+var pipeWidth = 80;
+var gameHasStart = false;
+render();
+
+document.body.onkeyup = function(e){
+	if(e.keyCode == 32){
+        bird.speedY = jumpSpeed;
+        if(!gameHasStart){
+			setInterval(function(){ 
+			   render();   
+			}, 1000/60);
+			setInterval(function(){ 
+			   generatePipes();   
+			}, 1200);
+			gameHasStart = true;
+		}
+    }
+}
+
+function generatePipes(){
+	if(pipes.length > 6){
+		 pipes[0].destruct();
+		 pipes[1].destruct();	
+		 pipes.splice(0, 2);
+	}
+	var mainCanvasWidth = document.getElementById("mainCanvas").offsetWidth;
+	var mainCanvasHeight = document.getElementById("mainCanvas").offsetHeight;
+	var randValue = Math.random() * 250;
+	var middleLine = (mainCanvasHeight / 2);
+ 	var pipe1 = new Object(mainCanvasWidth, middleLine + randValue, pipeWidth, (mainCanvasHeight / 2) + verticalDistanceBetweenPipes, "transparent");
+ 	var pipe2 = new Object(mainCanvasWidth, - ((mainCanvasHeight / 2) + verticalDistanceBetweenPipes) + middleLine + randValue - verticalDistanceBetweenPipes, pipeWidth, (mainCanvasHeight / 2) + verticalDistanceBetweenPipes, "transparent");
+ 	pipes.push(pipe1);
+ 	pipes.push(pipe2);
+	pipe1.image = "pipe1.png";
+	pipe2.image = "pipe2.png";
+ 	pipe1.speedX = - pipeSpeed;
+ 	pipe2.speedX = - pipeSpeed;
+ 	pipe1.speedY = 0;
+ 	pipe2.speedY = 0;
+}
+
+
+function render(){
+	score += 0.01;
+	document.getElementById("Score").innerHTML = "Current Score: " + Math.floor(score);
+	bird.speedY -= gravity;
+	for(var i = 0; i < objects.length; i++){
+		if((objects[i].pos.y + objects[i].speedY > 0 && objects[i].speedY < 0) || (objects[i].pos.y + objects[i].speedY < document.getElementById("mainCanvas").offsetHeight && objects[i].speedY > 0)){
+			objects[i].pos.y += objects[i].speedY;
+		}
+			objects[i].pos.x += objects[i].speedX;
+	}
+
+	prevElements = document.getElementsByClassName("obj");
+	for(var i = 0; i < prevElements.length; i++){
+		prevElements[i].parentNode.removeChild(prevElements[i]);
+	}
+	for(var i = 0; i < objects.length; i++){
+		var element = document.createElement("DIV");
+		element.className = "obj";
+		var obj = objects[i];
+		element.setAttribute("style", "background-size: 100% 100%; position:absolute; top: 0px; left:0px; margin-left:" + obj.pos.x + "px; margin-top:" + (document.getElementById("mainCanvas").offsetHeight - obj.pos.y - obj.size.y) + "px; width:" + obj.size.x + "px; height:" + obj.size.y + "px; background-color:" + obj.color + ";");
+		if(obj.image != null) element.style.backgroundImage = "url(" + obj.image + ")";
+		if(obj == bird){
+			element.style.transform = "rotate(" + (0 - fallingAnimationSpeed*obj.speedY) + "deg)";
+		}
+		document.getElementById("mainCanvas").appendChild(element);
+	}
+	
+	if(checkCollision(bird) != -1){ 
+		alert("LOST\nScore: " + Math.floor(score));
+		window.location.reload();
+		}
+}
+
+function checkCollision(object){
+	for(var i = 0; i < objects.length; i++){
+		if(objects[i] != object){
+
+			if(objects[i].bottom() < object.top() && objects[i].top() > object.bottom()){
+				if(objects[i].left() > object.left() && objects[i].left() < object.right()){
+					//collided right
+					return 3;
+				}
+				if(objects[i].right() < object.right() && objects[i].right() > object.left()){
+					//collided left
+					return 9;
+				}
+			}
+
+			if(objects[i].left() < object.right() && objects[i].right() > object.left()){
+				if(objects[i].top() < object.top() && objects[i].top() > object.bottom()){
+					//collided top
+					return 6;
+				}
+				if(objects[i].bottom() > object.bottom() && objects[i].bottom() < object.top()){
+					//collided bottom
+					return 12;
+				}
+			}
+		}
+	}
+	return -1;
+}
+
+</script>
+</body>
+</html>
